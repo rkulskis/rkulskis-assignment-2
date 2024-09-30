@@ -1,0 +1,38 @@
+name: Python Application Workflow
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repository code
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Set up Python environment (if needed)
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'  # Adjust this as per your project requirements
+
+      # Install project dependencies using Makefile
+      - name: Install dependencies
+        run: make install
+
+      # Run the application (add a sleep to ensure the server starts)
+      - name: Run the application
+        run: |
+          make run &
+          sleep 5  # Wait for the server to start
+
+      # Optionally, run your tests (if applicable)
+      - name: Run tests
+        run: make test  # Modify this if you use a different test command
