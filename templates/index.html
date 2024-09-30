@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K-Means Clustering</title>
+    <script>
+			function renderPlot(blob) {
+					const imgUrl = URL.createObjectURL(blob);
+					document.getElementById('points').src = imgUrl;
+			}
+			
+			let selectedCentroids = []; // really just has one centroid per req
+
+			function printMousePos(event) {
+					const pointsImg = document.getElementById('points');
+					const initMethod = document.getElementById('init-method').value;
+					const numClusters = parseInt(document.getElementById('clusters').value);
+
+					if (event.target === pointsImg && initMethod === 'manual') {
+							let rect = pointsImg.getBoundingClientRect();
+							let x = event.clientX - rect.left;
+							let y = event.clientY - rect.top;
+
+							if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
+									let imgWidth = pointsImg.width; // scale coords
+									let imgHeight = pointsImg.height;
+									let plotX = (x / imgWidth) * 100;
+									// flip Y-axis for plot coordinates
+									let plotY = 100 - (y / imgHeight) * 100;  
+
+									if (selectedCentroids.length < numClusters) {
+											selectedCentroids.pop();
+											selectedCentroids.push({ x: plotX, y: plotY });
+
+											submitCentroids();
+									} else {
+											alert(`Cannot have more than ${numClusters} centroids.`);
+									}
+							}
+					}
+			}
+
+			function submitCentroids() {
+					const numClusters = document.getElementById('clusters').value;
+					var obj = {}
+					obj.centroids = selectedCentroids;
+					obj.num_clusters = numClusters;
+					var s1 = JSON.stringify(obj);
+					if (selectedCentroids.length > 0) {
+							fetch('/submit_centroids', {
+									method: 'POST',
+									headers: {
+											'Content-Type': 'application/json',
+									},
+									body: s1,
+							})
+									.then(response => {
+											if (!response.ok) {
+													throw new Error('Network response was not ok');
+											}
+											return response.blob();
+									})
+									.then(renderPlot)
+									.catch((error) => {
+											console.error('Error generating dataset:', error);
+									});
+					}
+			}
+
+			document.addEventListener("click", printMousePos);
+
+      function generateDataset() {
+					const numClusters = document.getElementById('clusters').value;
+					const initMethod = document.getElementById('init-method').value;
+					var obj = {}
+					obj.num_clusters = numClusters;
+					obj.init_method = initMethod;
+					obj.reset_data = 'true';
+					var s1 = JSON.stringify(obj);
+
+					fetch('/generate_dataset', {
+              method: 'POST',
+							headers: {
+									'Content-Type': 'application/json',
+							},
+							body: s1,							
+					})
+							.then(response => {
+									if (!response.ok) {
+											throw new Error('Network response was not ok');
+									}
+									return response.blob();
+							})
+							.then(renderPlot)
+							.catch((error) => {
+									console.error('Error generating dataset:', error);
+							});
+      }
+
+      function stepThroughKMeans() {
+					const formData = new FormData();
+					const numClusters = document.getElementById('clusters').value;
+					formData.append('clusters', numClusters);					
+					fetch('/step', {
+              method: 'POST',
+							body: formData,
+					})
+							.then(response => {
+									if (!response.ok) {
+											throw new Error('Network response was not ok');
+									}
+									return response.blob();
+							})
+							.then(renderPlot)
+							.catch((error) => {
+									console.error('Error generating dataset:', error);
+							});					
+      }
+
+      function converge() {
+					const formData = new FormData();
+					const numClusters = document.getElementById('clusters').value;
+					formData.append('clusters', numClusters);					
+					fetch('/converge', {
+              method: 'POST',
+							body: formData,
+					})
+							.then(response => {
+									if (!response.ok) {
+											throw new Error('Network response was not ok');
+									}
+									return response.blob();
+							})
+							.then(renderPlot)
+							.catch((error) => {
+									console.error('Error generating dataset:', error);
+							});					
+      }
+
+      function resetAlgorithm() {
+					const numClusters = document.getElementById('clusters').value;
+					const initMethod = document.getElementById('init-method').value;
+					var obj = {}
+					obj.num_clusters = numClusters;
+					obj.init_method = initMethod;
+					obj.reset_data = 'false';
+					var s1 = JSON.stringify(obj);
+
+					fetch('/generate_dataset', {
+              method: 'POST',
+							headers: {
+									'Content-Type': 'application/json',
+							},
+							body: s1,							
+					})
+							.then(response => {
+									if (!response.ok) {
+											throw new Error('Network response was not ok');
+									}
+									return response.blob();
+							})
+							.then(renderPlot)
+							.catch((error) => {
+									console.error('Error generating dataset:', error);
+							});					
+      }
+      
+    </script>
+  </head>
+  <body>
+    <h1>K-Means Clustering</h1>
+    <form method="POST" action="/">
+      <label for="clusters">Select number of clusters:</label>
+      <input type="number" id="clusters" name="clusters" min="1" max="10" value="3" required>
+      <br>
+      <label for="init-method">Select Initialization Method:</label>
+      <select id="init-method" name="init-method" required>
+        <option value="random">Random</option>
+        <option value="farthest_first">Farthest First</option>
+        <option value="kmeans++">KMeans++</option>
+        <option value="manual">Manual</option>
+      </select>
+
+      <br>
+      <button type="button" onclick="generateDataset()">
+				Generate New Dataset
+			</button>
+      <button type="button" onclick="stepThroughKMeans()">
+				Step Through K-Means
+			</button>
+      <button type="button" onclick="resetAlgorithm()">
+				Reset Algorithm
+			</button>
+      <button type="button" onclick="converge()">
+				Run to Convergence
+			</button>
+    </form>
+
+		<br>
+<img id="points" src="/static/points.png"
+     alt="Points for K-Means Clustering"
+     style="cursor: crosshair; width: 100%; max-width: 500px; height: auto; border: 1px solid black;">
+
+    <p id="coordinates"></p> <!-- used before for printing coords -->
+  </body>
+</html>

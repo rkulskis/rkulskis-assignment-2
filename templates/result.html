@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K-Means Clustering Result</title>
+    <script>
+      function printMousePos(event) {
+          const plotImg = document.getElementById('plot');
+          
+          if (event.target === plotImg) {
+              let rect = plotImg.getBoundingClientRect();
+              
+              let x = event.clientX - rect.left;
+              let y = event.clientY - rect.top;
+
+              // Ensure that the click is inside the image bounds
+              if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
+                  // Print the coordinates within the image (scaled to 0-100 range if needed)
+                  let imgWidth = plotImg.width;
+                  let imgHeight = plotImg.height;
+                  let plotX = (x / imgWidth) * 100;
+                  let plotY = 100 - (y / imgHeight) * 100;  // Flip Y-axis for plot coordinates
+
+                  // Display the clicked coordinates
+                  document.getElementById('coordinates').textContent =
+                      `You clicked on the plot at: (${plotX.toFixed(2)}, ${plotY.toFixed(2)})`;
+              }
+          }
+      }
+
+      // Attach the click event listener to the document
+      document.addEventListener("click", printMousePos);
+    </script>
+  </head>
+  <body>
+    <h1>K-Means Clustering Result</h1>
+    <p>Number of clusters: {{ clusters|length }}</p>
+
+    <!-- Display the generated plot with an id -->
+    <img id="plot" src="/plot.png" alt="K-Means Clustering Plot" style="cursor: crosshair;">
+
+    <!-- Placeholder for displaying clicked coordinates -->
+    <p id="coordinates"></p>
+    
+    <a href="/">Run Again</a>
+  </body>
+</html>
